@@ -12,62 +12,46 @@
  *
  */
 
-import { Context, logging, storage } from 'near-sdk-as'
+import { Context, logging, MapEntry, PersistentUnorderedMap, storage } from 'near-sdk-as'
+import { NEWS_ITEM_ID_PREFIX } from './ids';
+import { NewsItem } from './models/NewsItem';
 
 const DEFAULT_MESSAGE = 'Hello'
 
 @nearBindgen
 export class Contract {
 
-  /* TODO: REQUIRES IMPLEMENTATION FOR "what's up?"
-   *
-   * 1. Get top news items (i.e. news items ordered by votes)
-   * 2. Get all news items ⭐ (maybe goes with the first one?)
-   * 3. Post news item (params e.g. summary string, link, account id)
-   *    defaults to be set: id=genereated value, votes=0 ⭐
-   * 4. Get news items by account id
-   * 5. Vote for a news item (params e.g. news item id, vouch amount)
-   *    defaults to be set: 0.22
-   * 6. Get top news by date (i.e. news items ordered by votes)
-   * 7. todo: all the logic with distributing rewards
-   */
+  idToNewsItem: PersistentUnorderedMap<string, NewsItem> = new PersistentUnorderedMap<string, NewsItem>("a");
 
-  // "Hello World" with singleton method
+  // Probably needs some form of pagination
+  getNewsItems(): MapEntry<string, NewsItem>[] {
+    return this.idToNewsItem.entries();
+  }
 
+  // AccountId should have an AccountId type?
+  // Link should be a validateable URL?
+  // Title should have a character limit?
+  //
+  // for later:
+  // VouchAmount by sharer
+  createNewsItem(title: string, link?: string): void {
+    // run validations
+
+    const newsItemId = this.generateNewsItemId();
+    const account_id = Context.sender
+
+    const newsItem = new NewsItem(newsItemId, account_id, title, link);
+
+    logging.log(newsItem);
+    this.idToNewsItem.set(newsItemId, newsItem);
+  }
+
+  // tmp, from base code
   getGreeting(accountId: string): string | null {
     return storage.get<string>(accountId, DEFAULT_MESSAGE);
   }
 
-  setGreeting(message: string): void {
-    const account_id = Context.sender
-
-    logging.log('Saving greeting "' + message + '" for account "' + account_id + '"')
-
-    storage.set(account_id, message)
+  private generateNewsItemId(): string {
+    return NEWS_ITEM_ID_PREFIX + this.idToNewsItem.length.toString();
   }
 }
-
-// "Hello World" example with simple export method
-
-// // Exported functions will be part of the public interface for your smart contract.
-// // Feel free to extract behavior to non-exported functions!
-// export function getGreeting(accountId: string): string | null {
-//   // This uses raw `storage.get`, a low-level way to interact with on-chain
-//   // storage for simple contracts.
-//   // If you have something more complex, check out persistent collections:
-//   // https://docs.near.org/docs/concepts/data-storage#assemblyscript-collection-types
-//   return storage.get<string>(accountId, DEFAULT_MESSAGE)
-// }
-
-// export function setGreeting(message: string): void {
-//   const account_id = Context.sender
-
-//   // Use logging.log to record logs permanently to the blockchain!
-//   logging.log(
-//     // String interpolation (`like ${this}`) is a work in progress:
-//     // https://github.com/AssemblyScript/assemblyscript/pull/1115
-//     'Saving greeting "' + message + '" for account "' + account_id + '"'
-//   )
-
-//   storage.set(account_id, message)
-// }

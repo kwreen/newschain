@@ -28,6 +28,11 @@ export default function App() {
           .then(greetingFromContract => {
             setGreeting(greetingFromContract)
           })
+
+        // todo: tmp code
+        window.contract.getNewsItems().then(newsItems => {
+          console.log(newsItems);
+        })
       }
     },
 
@@ -99,6 +104,12 @@ export default function App() {
             await window.contract.setGreeting({
               // pass the value that the user entered in the greeting field
               message: newGreeting
+            })
+
+            // todo: tmp code
+            await window.contract.createNewsItem({
+              title: newGreeting,
+              link: "google.com/xd"
             })
           } catch (e) {
             alert(

@@ -1,4 +1,5 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME ||'whats-up'
+console.log(process.env.CONTRACT_NAME)
+const CONTRACT_NAME = process.env.CONTRACT_NAME ||'whats-up.kwreen-dev.testnet'
 
 function getConfig(env) {
   switch (env) {

@@ -54,12 +54,14 @@ const ShareNewsPage = (props) => {
 
     console.log("submitted values: " + newsTitleValue + ", " + newsSourceValue);
 
-    if (newsTitleValue && newsSourceValue) {
+    if (newsTitleValue) {
       try {
         await window.contract.createNewsItem({
           title: newsTitleValue,
           link: newsSourceValue,
         });
+
+        // what do we get back?
       } catch (e) {
         alert("Oops, that didn't work out 😔");
         throw e;
@@ -120,7 +122,6 @@ const ShareNewsPage = (props) => {
                 />
               </Form.Group>
               <Form.Group
-                required
                 className="mb-3"
                 controlId="exampleForm.ControlTextarea1"
               >

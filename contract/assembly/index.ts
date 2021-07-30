@@ -40,7 +40,7 @@ export class Contract {
     const newsItemId = this.generateNewsItemId();
     const account_id = Context.sender
 
-    const newsItem = new NewsItem(newsItemId, account_id, title, link);
+    const newsItem = new NewsItem(newsItemId, account_id, title, 0, link);
 
     logging.log(newsItem);
     this.idToNewsItem.set(newsItemId, newsItem);

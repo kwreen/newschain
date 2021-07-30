@@ -1,5 +1,5 @@
 import "regenerator-runtime/runtime";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { login, logout } from "./utils";
 
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -25,15 +25,15 @@ import NewsItemList from "./Components/NewsItemList";
 
 export default function App() {
   // use React Hooks to store greeting in component state
-  const [greeting, setGreeting] = React.useState();
+  const [greeting, setGreeting] = useState();
 
   // when the user has not yet interacted with the form, disable the button
-  const [buttonDisabled, setButtonDisabled] = React.useState(true);
+  const [buttonDisabled, setButtonDisabled] = useState(true);
 
   // after submitting the form, we want to show Notification
-  const [showNotification, setShowNotification] = React.useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // in this case, we only care to query the contract when signed in
     if (window.walletConnection.isSignedIn()) {
       // window.contract is set by initContract in index.js

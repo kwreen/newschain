@@ -16,22 +16,25 @@ const NewsItemList = (props) => {
 
   return (
     <Container>
-      <Card>
-        <blockquote className="blockquote mb-0 card-body">
-          <Card.Text>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-            posuere erat a ante.
-          </Card.Text>
-          <div className="text-end">
-            <small>
-              <Card.Link href="#">Vouch</Card.Link>
-            </small>{" "}
-            <small>
-              <Card.Link href="#">Source</Card.Link>
-            </small>
-          </div>
-        </blockquote>
-      </Card>
+      {newsItems.map((x, i) => {
+        return (
+          <Card key={i}>
+            <blockquote className="blockquote mb-0 card-body">
+              <Card.Text>
+                {i} {JSON.stringify(x)}
+              </Card.Text>
+              <div className="text-end">
+                <small>
+                  <Card.Link href="#">Vouch</Card.Link>
+                </small>{" "}
+                <small>
+                  <Card.Link href="#">Source</Card.Link>
+                </small>
+              </div>
+            </blockquote>
+          </Card>
+        );
+      })}
     </Container>
   );
 };

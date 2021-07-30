@@ -9,6 +9,7 @@ export class NewsItem {
     public id: string,
     public sharerId: string,
     public title: string,
+    public valueVouchTotal: number,
     public link?: string,
   ) { }
 }

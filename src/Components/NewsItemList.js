@@ -27,9 +27,11 @@ const NewsItemList = (props) => {
                 <small>
                   <Card.Link href="#">Vouch</Card.Link>
                 </small>{" "}
-                <small>
-                  <Card.Link href="#">Source</Card.Link>
-                </small>
+                {x.value?.link && (
+                  <small>
+                    <Card.Link href={x.value.link}>Source</Card.Link>
+                  </small>
+                )}
               </div>
             </blockquote>
           </Card>

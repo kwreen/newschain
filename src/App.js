@@ -3,7 +3,7 @@ import React, { useRef } from "react";
 import { login, logout } from "./utils";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./global.css";
+// import "./global.css";
 
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import {
@@ -21,6 +21,7 @@ import ExampleNotification from "./Components/ExampleNotification";
 
 import CreateNewsItem from "./Components/CreateNewsItem";
 import About from "./Components/About";
+import NewsItemList from "./Components/NewsItemList";
 
 export default function App() {
   // use React Hooks to store greeting in component state
@@ -32,8 +33,6 @@ export default function App() {
   // after submitting the form, we want to show Notification
   const [showNotification, setShowNotification] = React.useState(false);
 
-  // The useEffect hook can be used to fire side-effects during render
-  // Learn more: https://reactjs.org/docs/hooks-intro.html
   React.useEffect(() => {
     // in this case, we only care to query the contract when signed in
     if (window.walletConnection.isSignedIn()) {
@@ -43,11 +42,6 @@ export default function App() {
         .then((greetingFromContract) => {
           setGreeting(greetingFromContract);
         });
-
-      // todo: tmp code
-      window.contract.getNewsItems().then((newsItems) => {
-        console.log(newsItems);
-      });
     }
   }, []);
 
@@ -158,11 +152,10 @@ export default function App() {
         )}
       </Container>
 
-      <button className="link" style={{ float: "right" }} onClick={logout}>
-        Sign out
-      </button>
-
-      <main>
+      <Container>
+        <button className="link" style={{ float: "right" }} onClick={logout}>
+          Sign out
+        </button>
         <h1>Welcome back, {window.accountId}</h1>
         <Card>
           <Card.Body>
@@ -191,7 +184,9 @@ export default function App() {
             </Button>
           </Card.Body>
         </Card>
-      </main>
+      </Container>
+
+      <NewsItemList />
       {showNotification && <ExampleNotification />}
     </BrowserRouter>
   );

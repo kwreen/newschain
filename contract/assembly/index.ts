@@ -51,6 +51,14 @@ export class Contract {
     return storage.get<string>(accountId, DEFAULT_MESSAGE);
   }
 
+  setGreeting(message: string): void {
+    const account_id = Context.sender
+
+    logging.log('Saving greeting "' + message + '" for account "' + account_id + '"')
+
+    storage.set(account_id, message)
+  }
+
   private generateNewsItemId(): string {
     return NEWS_ITEM_ID_PREFIX + this.idToNewsItem.length.toString();
   }

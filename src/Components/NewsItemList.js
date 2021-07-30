@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Card } from "react-bootstrap";
+import { Card } from "react-bootstrap";
 
 const NewsItemList = (props) => {
   const [newsItems, setNewsItems] = useState([]);
@@ -15,7 +15,7 @@ const NewsItemList = (props) => {
   }, []);
 
   return (
-    <Container>
+    <>
       {newsItems.map((x, i) => {
         return (
           <Card key={i}>
@@ -35,7 +35,7 @@ const NewsItemList = (props) => {
           </Card>
         );
       })}
-    </Container>
+    </>
   );
 };
 

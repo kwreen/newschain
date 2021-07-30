@@ -10,7 +10,7 @@ import { Container, Navbar, Nav, Row, Button } from "react-bootstrap";
 import { login, logout } from "./utils";
 
 import ExampleIntro from "./Components/ExampleIntro";
-import CreateNewsItem from "./Components/CreateNewsItem";
+import ShareNewsPage from "./Components/ShareNewsPage";
 import AboutPage from "./Components/AboutPage";
 import HomePage from "./Components/HomePage";
 
@@ -23,7 +23,7 @@ export default function App() {
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto"></Nav>
-            <Nav.Link href="/create">Create</Nav.Link>
+            <Nav.Link href="/share">Share news</Nav.Link>
             <Nav.Link href="/about">About</Nav.Link>
             <Nav.Link
               onClick={window.walletConnection.isSignedIn() ? logout : login}
@@ -46,8 +46,8 @@ export default function App() {
               <Route exact path="/">
                 <HomePage />
               </Route>
-              <Route exact path="/create">
-                <CreateNewsItem />
+              <Route exact path="/share">
+                <ShareNewsPage />
               </Route>
               <Route exact path="/about">
                 <AboutPage />

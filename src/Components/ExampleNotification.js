@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 
 import getConfig from "../config";
 
@@ -18,7 +19,7 @@ const ExampleNotification = (props) => {
       {
         " " /* React trims whitespace around tags; insert literal space character when needed */
       }
-      called method: 'setGreeting' in contract:{" "}
+      called method: {props.changeMethod} in contract:{" "}
       <a
         target="_blank"
         rel="noreferrer"
@@ -34,6 +35,8 @@ const ExampleNotification = (props) => {
   );
 };
 
-ExampleNotification.propTypes = {};
+ExampleNotification.propTypes = {
+  changeMethod: PropTypes.string,
+};
 
 export default ExampleNotification;

@@ -1,26 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Container, Card, Form, Button } from "react-bootstrap";
 
-import { login, logout } from "../utils";
-
 import NewsItemList from "./NewsItemList";
-import ExampleIntro from "./ExampleIntro";
 import ExampleNotification from "./ExampleNotification";
 
 const HomePage = (props) => {
-  // use React Hooks to store greeting in component state
   const [greeting, setGreeting] = useState();
-
-  // when the user has not yet interacted with the form, disable the button
   const [buttonDisabled, setButtonDisabled] = useState(true);
-
-  // after submitting the form, we want to show Notification
   const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
-    // in this case, we only care to query the contract when signed in
     if (window.walletConnection.isSignedIn()) {
-      // window.contract is set by initContract in index.js
       window.contract
         .getGreeting({ accountId: window.accountId })
         .then((greetingFromContract) => {
@@ -28,18 +18,6 @@ const HomePage = (props) => {
         });
     }
   }, []);
-
-  // if not signed in, return early with sign-in prompt
-  if (!window.walletConnection.isSignedIn()) {
-    return (
-      <main>
-        <ExampleIntro />
-        <p style={{ textAlign: "center", marginTop: "2.5em" }}>
-          <button onClick={login}>Sign in</button>
-        </p>
-      </main>
-    );
-  }
 
   const greetingField = useRef("");
 
@@ -53,13 +31,10 @@ const HomePage = (props) => {
     setButtonDisabled(true);
 
     try {
-      // make an update call to the smart contract
       await window.contract.setGreeting({
-        // pass the value that the user entered in the greeting field
         message: newGreeting,
       });
 
-      // todo: tmp code
       // await window.contract.createNewsItem({
       //   title: newGreeting,
       //   link: "google.com/xd",
@@ -72,7 +47,6 @@ const HomePage = (props) => {
       );
       throw e;
     } finally {
-      // re-enable the form, whether the call succeeded or failed
       setButtonDisabled(false);
     }
 
@@ -91,9 +65,6 @@ const HomePage = (props) => {
   return (
     <>
       <Container>
-        <button className="link" style={{ float: "right" }} onClick={logout}>
-          Sign out
-        </button>
         <h1>Welcome back, {window.accountId}</h1>
         <Card>
           <Card.Body>

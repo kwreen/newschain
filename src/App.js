@@ -5,10 +5,11 @@ import { BrowserRouter, Switch, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 // import "./global.css";
 
-import { Container, Navbar, Nav, Row, Card } from "react-bootstrap";
+import { Container, Navbar, Nav, Row, Button } from "react-bootstrap";
 
 import { login, logout } from "./utils";
 
+import ExampleIntro from "./Components/ExampleIntro";
 import CreateNewsItem from "./Components/CreateNewsItem";
 import AboutPage from "./Components/AboutPage";
 import HomePage from "./Components/HomePage";
@@ -29,7 +30,7 @@ export default function App() {
             >
               {/* add code here for login */}
               {window.walletConnection.isSignedIn()
-                ? window.accountId
+                ? window.accountId + " (log out)"
                 : "Login"}
             </Nav.Link>
           </Navbar.Collapse>
@@ -54,14 +55,12 @@ export default function App() {
             </Switch>
           </Row>
         ) : (
-          <Row className="d-flex justify-content-center">
-            <Card>
-              <Card.Body>
-                {" "}
-                <Card.Title>Please Sign In</Card.Title>
-              </Card.Body>
-            </Card>
-          </Row>
+          <>
+            <ExampleIntro />
+            <p style={{ textAlign: "center", marginTop: "2.5em" }}>
+              <Button onClick={login}>Sign in</Button>
+            </p>
+          </>
         )}
       </Container>
     </BrowserRouter>

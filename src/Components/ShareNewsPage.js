@@ -47,31 +47,34 @@ const ShareNewsPage = (props) => {
   const newsSourceField = useRef("");
   const onNewsItemSubmit = async (event) => {
     event.preventDefault();
-    // disable the form while the value gets updated on-chain
-    setButtonDisabled(true);
 
     // hold onto new user-entered value from React's SynthenticEvent for use after `await` call
-    const newsTitleValue = newsTitleField.current.value;
-    const newsSourceValue = newsSourceField.current.value;
+    const newsTitleValue = newsTitleField.current.value?.trim();
+    const newsSourceValue = newsSourceField.current.value?.trim();
 
-    try {
-      await window.contract.createNewsItem({
-        title: newsTitleValue,
-        link: newsSourceValue,
-      });
-    } catch (e) {
-      alert("Oops, that didn't work out 😔");
-      throw e;
-    } finally {
-      setButtonDisabled(false);
+    console.log("submitted values: " + newsTitleValue + ", " + newsSourceValue);
+
+    if (newsTitleValue && newsSourceValue) {
+      try {
+        await window.contract.createNewsItem({
+          title: newsTitleValue,
+          link: newsSourceValue,
+        });
+      } catch (e) {
+        alert("Oops, that didn't work out 😔");
+        throw e;
+      } finally {
+        newsTitleField.current.value = "";
+        newsSourceField.current.value = "";
+      }
+
+      setShowNotification(true);
+      // remove Notification again after css animation completes
+      // this allows it to be shown again next time the form is submitted
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 11000);
     }
-
-    setShowNotification(true);
-    // remove Notification again after css animation completes
-    // this allows it to be shown again next time the form is submitted
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 11000);
   };
 
   return (
@@ -110,25 +113,34 @@ const ShareNewsPage = (props) => {
               >
                 <Form.Label>News title</Form.Label>
                 <Form.Control
+                  required
+                  ref={newsTitleField}
                   type="text"
                   placeholder="Over 1 billion dApps now exist on the NEAR blockchain"
                 />
               </Form.Group>
               <Form.Group
+                required
                 className="mb-3"
                 controlId="exampleForm.ControlTextarea1"
               >
                 <Form.Label>Reliable source</Form.Label>
-                <Form.Control type="text" placeholder="https://near.org/" />
+                <Form.Control
+                  ref={newsSourceField}
+                  type="text"
+                  placeholder="https://near.org/"
+                />
               </Form.Group>
-              <Button disabled={buttonDisabled} onClick={onNewsItemSubmit}>
+              <Button type="submit" onClick={onNewsItemSubmit}>
                 Share
               </Button>
             </Form>
           </Card.Body>
         </Card>
       </Container>
-      {showNotification && <ExampleNotification />}
+      {showNotification && (
+        <ExampleNotification changeMethod="createNewsItem" />
+      )}
     </>
   );
 };

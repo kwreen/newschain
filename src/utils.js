@@ -1,4 +1,11 @@
-import { connect, Contract, keyStores, WalletConnection } from "near-api-js";
+import {
+  connect,
+  Contract,
+  keyStores,
+  WalletConnection,
+  utils,
+  Account,
+} from "near-api-js";
 import getConfig from "./config";
 
 const nearConfig = getConfig(process.env.NODE_ENV || "development");
@@ -17,20 +24,19 @@ export async function initContract() {
   // is hosted at https://wallet.testnet.near.org
   window.walletConnection = new WalletConnection(near);
 
+  window.utils = utils;
+
   // Getting the Account ID. If still unauthorized, it's just empty string
   window.accountId = window.walletConnection.getAccountId();
 
+  window.account = new Account(near, window.accountId);
   // Initializing our contract APIs by contract name and configuration
   window.contract = await new Contract(
     window.walletConnection.account(),
     nearConfig.contractName,
     {
-      // todo: tmp code
-
-      // View methods are read only. They don't modify the state, but usually return some value.
       viewMethods: ["getGreeting", "getNewsItems"],
-      // Change methods can modify the state. But you don't receive the returned value when called.
-      changeMethods: ["setGreeting", "createNewsItem"],
+      changeMethods: ["setGreeting", "createNewsItem", "valueVouchNewsItem"],
     }
   );
 }

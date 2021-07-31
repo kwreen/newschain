@@ -70,6 +70,7 @@ const ShareNewsPage = (props) => {
         newsSourceField.current.value = "";
       }
 
+      // todo: handle failure case
       setShowNotification(true);
       // remove Notification again after css animation completes
       // this allows it to be shown again next time the form is submitted

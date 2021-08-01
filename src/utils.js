@@ -38,14 +38,14 @@ export async function initContract() {
       viewMethods: [
         "getGreeting",
         "getNewsItems",
-        "getTransactions",
+        "getVouchTransactions",
         "getTodayTimestamp",
       ],
       changeMethods: [
         "setGreeting",
         "createNewsItem",
-        "valueVouchNewsItem",
-        "releaseTokensForTopStakedValueVouchedNews",
+        "vouch",
+        "releaseVouchedTokens",
         "initializeContract", // should remove this
       ],
     }

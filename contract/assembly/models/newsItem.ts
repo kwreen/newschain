@@ -12,7 +12,7 @@ export class NewsItem {
     public id: string,
     public sharerId: string,
     public title: string,
-    public valueVouchTotal: u128,
+    public totalVouchedTokens: u128,
     public link?: string
   ) {}
 }

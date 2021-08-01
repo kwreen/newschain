@@ -9,9 +9,9 @@ import {
   u128,
 } from "near-sdk-as";
 
-import { NEWS_ITEM_ID_PREFIX, VALUE_VOUCH_TRANSACTION_ID_PREFIX } from "./ids";
+import { NEWS_ITEM_ID_PREFIX, VOUCH_TRANSACTION_ID_PREFIX } from "./ids";
 import { NewsItem } from "./models/NewsItem";
-import { ValueVouchTransaction } from "./models/ValueVouchTransaction";
+import { VouchTransaction } from "./models/VouchTransaction";
 
 const DEFAULT_MESSAGE = "Hello";
 
@@ -21,20 +21,17 @@ export class Contract {
   idToNewsItem: PersistentUnorderedMap<string, NewsItem> =
     new PersistentUnorderedMap<string, NewsItem>("a");
 
-  // { value_vouch_transaction_id => ValueVouchTransaction }
-  idToValueVouchTransaction: PersistentUnorderedMap<
-    string,
-    ValueVouchTransaction
-  > = new PersistentUnorderedMap<string, ValueVouchTransaction>("b");
+  // { vouch_transaction_id => VouchTransaction }
+  idToVouchTransaction: PersistentUnorderedMap<string, VouchTransaction> =
+    new PersistentUnorderedMap<string, VouchTransaction>("b");
 
-  // { news_item_id => [ValueVouchTransactions] }
-  newsItemIdToValueVouchTransactions: PersistentUnorderedMap<
+  // { news_item_id => [VouchTransactions] }
+  newsItemIdToVouchTransctions: PersistentUnorderedMap<
     string,
-    PersistentVector<ValueVouchTransaction>
-  > = new PersistentUnorderedMap<
-    string,
-    PersistentVector<ValueVouchTransaction>
-  >("c");
+    PersistentVector<VouchTransaction>
+  > = new PersistentUnorderedMap<string, PersistentVector<VouchTransaction>>(
+    "c"
+  );
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
   // NEWS ITEM
@@ -78,7 +75,7 @@ export class Contract {
   }
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-  // VALUE VOUCH TRANSACTIONS
+  // VOUCH TRANSACTIONS
 
   /**
    * Vouch for the value of a news item by staking NEAR tokens.
@@ -86,7 +83,7 @@ export class Contract {
    * @param newsItemId of the news item to vouch for
    * @param amount to stake for the the value vouching
    */
-  valueVouchNewsItem(newsItemId: string, amount: u128): void {
+  vouch(newsItemId: string, amount: u128): void {
     assert(
       this.idToNewsItem.contains(newsItemId),
       "No news item exists for id " + newsItemId
@@ -97,8 +94,8 @@ export class Contract {
 
     const newsItem = this.idToNewsItem.getSome(newsItemId);
 
-    const transactionId = this.generateValueVouchTransactionId();
-    const newTransaction = new ValueVouchTransaction(
+    const transactionId = this.generateVouchTransactionId();
+    const newTransaction = new VouchTransaction(
       accountId,
       accountId,
       newsItemId,
@@ -110,16 +107,13 @@ export class Contract {
     logging.log(
       "Staking " + amount.toString() + "NEAR tokens for NewsItem #" + newsItemId
     );
-    this.idToValueVouchTransaction.set(transactionId, newTransaction);
+    this.idToVouchTransaction.set(transactionId, newTransaction);
 
     let currentTransactions = this.getTransactionsByNewsItemId(newsItemId);
     currentTransactions.push(newTransaction);
-    this.newsItemIdToValueVouchTransactions.set(
-      newsItemId,
-      currentTransactions
-    );
+    this.newsItemIdToVouchTransctions.set(newsItemId, currentTransactions);
 
-    newsItem.valueVouchTotal = u128.add(newsItem.valueVouchTotal, amount);
+    newsItem.totalVouchedTokens = u128.add(newsItem.totalVouchedTokens, amount);
   }
 
   /**
@@ -128,17 +122,16 @@ export class Contract {
    * @param newsItemId
    * @returns a list of transactions
    */
-  getTransactions(newsItemId: string): ValueVouchTransaction[] {
-    const vectorTransactions = this.getTransactionsByNewsItemId(newsItemId);
-    let transactions: ValueVouchTransaction[] =
-      new Array<ValueVouchTransaction>();
+  getVouchTransactions(newsItemId: string): VouchTransaction[] {
+    const transactionsVector = this.getTransactionsByNewsItemId(newsItemId);
+    let transactionArray: VouchTransaction[] = new Array<VouchTransaction>();
 
-    for (let i = 0; i < vectorTransactions.length; i++) {
-      const item = vectorTransactions[i];
-      transactions.push(item);
+    for (let i = 0; i < transactionsVector.length; i++) {
+      const item = transactionsVector[i];
+      transactionArray.push(item);
     }
 
-    return transactions;
+    return transactionArray;
   }
 
   /**
@@ -146,7 +139,7 @@ export class Contract {
    * This method will only run if the day has ended. If called before the day's end,
    * no tokens will be released.
    */
-  releaseTokensForTopStakedValueVouchedNews(): void {
+  releaseVouchedTokens(): void {
     // todo
     // assert(this.isContractInitialized, "Contract must be initialized first");
 
@@ -257,10 +250,9 @@ export class Contract {
     return todayTimestamp;
   }
 
-  private generateValueVouchTransactionId(): string {
+  private generateVouchTransactionId(): string {
     return (
-      VALUE_VOUCH_TRANSACTION_ID_PREFIX +
-      this.idToValueVouchTransaction.length.toString()
+      VOUCH_TRANSACTION_ID_PREFIX + this.idToVouchTransaction.length.toString()
     );
   }
 
@@ -270,12 +262,12 @@ export class Contract {
 
   private getTransactionsByNewsItemId(
     id: string
-  ): PersistentVector<ValueVouchTransaction> {
-    let currentTransactions: PersistentVector<ValueVouchTransaction>;
-    if (this.newsItemIdToValueVouchTransactions.contains(id)) {
-      currentTransactions = this.newsItemIdToValueVouchTransactions.getSome(id);
+  ): PersistentVector<VouchTransaction> {
+    let currentTransactions: PersistentVector<VouchTransaction>;
+    if (this.newsItemIdToVouchTransctions.contains(id)) {
+      currentTransactions = this.newsItemIdToVouchTransctions.getSome(id);
     } else {
-      currentTransactions = new PersistentVector<ValueVouchTransaction>("d");
+      currentTransactions = new PersistentVector<VouchTransaction>("d");
     }
 
     return currentTransactions;

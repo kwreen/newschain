@@ -9,7 +9,11 @@ import {
   u128,
 } from "near-sdk-as";
 
-import { NEWS_ITEM_ID_PREFIX, VOUCH_TRANSACTION_ID_PREFIX } from "./ids";
+import {
+  NEWS_ITEM_ID_PREFIX,
+  VOUCH_TRANSACTION_ID_PREFIX,
+  LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP,
+} from "./ids";
 import { NewsItem } from "./models/NewsItem";
 import { VouchTransaction } from "./models/VouchTransaction";
 
@@ -143,41 +147,37 @@ export class Contract {
     // todo
     // assert(this.isContractInitialized, "Contract must be initialized first");
 
-    // Date is from Context is retrieved as nanoseconds (10^-9)
-    // JavaScript dates are handled in milliseconds (10^-3)
-    const blockTimestampMultiplier = 1000000;
-    const blockTimestamp = Context.blockTimestamp;
-
-    const currentDate = new Date(blockTimestamp / blockTimestampMultiplier);
-    currentDate.setUTCHours(0);
-    currentDate.setUTCMinutes(0);
-    currentDate.setUTCSeconds(0);
-    currentDate.setUTCMilliseconds(0);
-    const currentTimestamp = currentDate.getTime();
+    const currentDateTime = this.getCurrentDateTime();
+    const currentTimestamp = currentDateTime.getTime();
 
     // Yesterday is 864e5 milliseconds back
     // 864e5 = 24*60*60*1000
     const dayInMilliseconds = 864e5;
 
     // trying to make the compiler happy, there's gotta be a better way to do this...
-    const todayTimestampString = storage.get<string>("today");
-    assert(todayTimestampString, "Contract has not been initialized");
+    const lastTimestampString = storage.get<string>(
+      LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP
+    );
+    assert(lastTimestampString, "Contract has not been initialized");
 
-    if (todayTimestampString) {
-      const todayTimestamp = <i64>parseInt(todayTimestampString);
+    if (lastTimestampString) {
+      const lastTimestamp = <i64>parseInt(lastTimestampString);
 
       // logic
-      if (currentTimestamp == todayTimestamp) {
+      if (currentTimestamp == lastTimestamp) {
         logging.log("day not over, not releasing tokens yet");
         return;
-      } else if (currentTimestamp == todayTimestamp + dayInMilliseconds) {
+      } else if (currentTimestamp == lastTimestamp + dayInMilliseconds) {
         logging.log("day over, releasing tokens..");
         // code to release tokens...
         logging.log(".. and update today's timestamp");
-        storage.set("today", currentTimestamp.toString());
+        storage.set(
+          LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP,
+          currentTimestamp.toString()
+        );
       }
 
-      logging.log(currentDate);
+      logging.log(currentDateTime);
     }
   }
 
@@ -188,17 +188,28 @@ export class Contract {
    * The number represents non-leap-milliseconds since January 1, 1970 0:00:00 UTC.
    * @returns last vouched tokens release timestamp
    */
-  getTodayTimestamp(): string | null {
-    const todayTimestampString = storage.get<string>("today");
-    assert(todayTimestampString, "Contract has not been initialized");
+  getLastVouchedTokensReleaseTimestamp(): string | null {
+    const lastTimestamp = storage.get<string>(
+      LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP
+    );
+    assert(lastTimestamp, "Contract has not been initialized");
 
-    return todayTimestampString;
+    return lastTimestamp;
   }
 
   // todo: tmp method, should not be a callable
   initializeContract(): void {
-    const todayTimestamp = this.updateTodayTimestampKey();
-    logging.log("Initializing contract, with today=" + todayTimestamp);
+    // Storing todayTimestamp as a string because i64 cannot be nullable
+    // Should we store with -1 instead?
+    const currentDateTime = this.getCurrentDateTime();
+
+    const today = (currentDateTime.getTime() - 864e5).toString();
+    storage.set(LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP, today);
+
+    logging.log(
+      "Initializing contract with LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP=" +
+        today
+    );
   }
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
@@ -233,21 +244,19 @@ export class Contract {
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
   // PRIVATE
 
-  // Storing todayTimestamp as a string because i64 cannot be nullable
-  // Should we store with -1 instead?
-  private updateTodayTimestampKey(): string {
+  private getCurrentDateTime(): Date {
+    // Date is from Context is retrieved as nanoseconds (10^-9)
+    // JavaScript dates are handled in milliseconds (10^-3)
     const blockTimestampMultiplier = 1000000;
     const blockTimestamp = Context.blockTimestamp;
+
     const currentDateTime = new Date(blockTimestamp / blockTimestampMultiplier);
     currentDateTime.setUTCHours(0);
     currentDateTime.setUTCMinutes(0);
     currentDateTime.setUTCSeconds(0);
     currentDateTime.setUTCMilliseconds(0);
 
-    const todayTimestamp = (currentDateTime.getTime() - 864e5).toString();
-    storage.set("today", todayTimestamp);
-
-    return todayTimestamp;
+    return currentDateTime;
   }
 
   private generateVouchTransactionId(): string {

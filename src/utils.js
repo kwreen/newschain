@@ -39,7 +39,7 @@ export async function initContract() {
         "getGreeting",
         "getNewsItems",
         "getVouchTransactions",
-        "getTodayTimestamp",
+        "getLastVouchedTokensReleaseTimestamp",
       ],
       changeMethods: [
         "setGreeting",

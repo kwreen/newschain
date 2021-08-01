@@ -1,4 +1,4 @@
-import { context, u128 } from "near-sdk-as";
+import { Context, u128 } from "near-sdk-as";
 
 // generate a new id according to title + link + sharerId?
 // could also be handled on the frontend if so.. where should this live?
@@ -6,7 +6,7 @@ import { context, u128 } from "near-sdk-as";
 
 @nearBindgen
 export class NewsItem {
-  createdAt: u64 = context.blockTimestamp;
+  createdAt: u64 = Context.blockTimestamp;
 
   constructor(
     public id: string,

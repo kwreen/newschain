@@ -15,7 +15,7 @@ const NewsItemList = (props) => {
       setNewsItems(newsItems);
       console.log(newsItems);
 
-      let transactionsForNI_5 = await window.contract.getTransactions({
+      let transactionsForNI_5 = await window.contract.getVouchTransactions({
         newsItemId: "NI_5",
       });
       console.log(transactionsForNI_5);
@@ -35,7 +35,7 @@ const NewsItemList = (props) => {
       newsItemId
     );
     try {
-      await window.contract.valueVouchNewsItem({
+      await window.contract.vouch({
         newsItemId: newsItemId,
         amount: window.utils.format.parseNearAmount(tmpVouchAmount),
       });

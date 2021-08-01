@@ -14,6 +14,11 @@ const NewsItemList = (props) => {
       let newsItems = await window.contract.getNewsItems();
       setNewsItems(newsItems);
       console.log(newsItems);
+
+      let transactionsForNI_5 = await window.contract.getTransactions({
+        newsItemId: "NI_5",
+      });
+      console.log(transactionsForNI_5);
     };
 
     fetchData();

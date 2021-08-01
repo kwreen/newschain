@@ -112,14 +112,7 @@ export class Contract {
     );
     this.idToValueVouchTransaction.set(transactionId, newTransaction);
 
-    let currentTransactions: PersistentVector<ValueVouchTransaction>;
-    if (this.newsItemIdToValueVouchTransactions.contains(newsItemId)) {
-      currentTransactions =
-        this.newsItemIdToValueVouchTransactions.getSome(newsItemId);
-    } else {
-      currentTransactions = new PersistentVector<ValueVouchTransaction>("d");
-    }
-
+    let currentTransactions = this.getTransactionsByNewsItemId(newsItemId);
     currentTransactions.push(newTransaction);
     this.newsItemIdToValueVouchTransactions.set(
       newsItemId,
@@ -127,6 +120,25 @@ export class Contract {
     );
 
     newsItem.valueVouchTotal = u128.add(newsItem.valueVouchTotal, amount);
+  }
+
+  /**
+   * Get all the transactions for a given news item id.
+   *
+   * @param newsItemId
+   * @returns a list of transactions
+   */
+  getTransactions(newsItemId: string): ValueVouchTransaction[] {
+    const vectorTransactions = this.getTransactionsByNewsItemId(newsItemId);
+    let transactions: ValueVouchTransaction[] =
+      new Array<ValueVouchTransaction>();
+
+    for (let i = 0; i < vectorTransactions.length; i++) {
+      const item = vectorTransactions[i];
+      transactions.push(item);
+    }
+
+    return transactions;
   }
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
@@ -170,5 +182,18 @@ export class Contract {
 
   private generateNewsItemId(): string {
     return NEWS_ITEM_ID_PREFIX + this.idToNewsItem.length.toString();
+  }
+
+  private getTransactionsByNewsItemId(
+    id: string
+  ): PersistentVector<ValueVouchTransaction> {
+    let currentTransactions: PersistentVector<ValueVouchTransaction>;
+    if (this.newsItemIdToValueVouchTransactions.contains(id)) {
+      currentTransactions = this.newsItemIdToValueVouchTransactions.getSome(id);
+    } else {
+      currentTransactions = new PersistentVector<ValueVouchTransaction>("d");
+    }
+
+    return currentTransactions;
   }
 }

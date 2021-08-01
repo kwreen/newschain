@@ -35,7 +35,7 @@ export async function initContract() {
     window.walletConnection.account(),
     nearConfig.contractName,
     {
-      viewMethods: ["getGreeting", "getNewsItems"],
+      viewMethods: ["getGreeting", "getNewsItems", "getTransactions"],
       changeMethods: ["setGreeting", "createNewsItem", "valueVouchNewsItem"],
     }
   );

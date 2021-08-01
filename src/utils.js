@@ -35,8 +35,19 @@ export async function initContract() {
     window.walletConnection.account(),
     nearConfig.contractName,
     {
-      viewMethods: ["getGreeting", "getNewsItems", "getTransactions"],
-      changeMethods: ["setGreeting", "createNewsItem", "valueVouchNewsItem"],
+      viewMethods: [
+        "getGreeting",
+        "getNewsItems",
+        "getTransactions",
+        "getTodayTimestamp",
+      ],
+      changeMethods: [
+        "setGreeting",
+        "createNewsItem",
+        "valueVouchNewsItem",
+        "releaseTokensForTopStakedValueVouchedNews",
+        "initializeContract", // should remove this
+      ],
     }
   );
 }

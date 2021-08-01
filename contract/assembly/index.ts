@@ -141,6 +141,73 @@ export class Contract {
     return transactions;
   }
 
+  /**
+   * Release NEAR tokens that have been stake for the vouching of a news item.
+   * This method will only run if the day has ended. If called before the day's end,
+   * no tokens will be released.
+   */
+  releaseTokensForTopStakedValueVouchedNews(): void {
+    // todo
+    // assert(this.isContractInitialized, "Contract must be initialized first");
+
+    // Date is from Context is retrieved as nanoseconds (10^-9)
+    // JavaScript dates are handled in milliseconds (10^-3)
+    const blockTimestampMultiplier = 1000000;
+    const blockTimestamp = Context.blockTimestamp;
+
+    const currentDate = new Date(blockTimestamp / blockTimestampMultiplier);
+    currentDate.setUTCHours(0);
+    currentDate.setUTCMinutes(0);
+    currentDate.setUTCSeconds(0);
+    currentDate.setUTCMilliseconds(0);
+    const currentTimestamp = currentDate.getTime();
+
+    // Yesterday is 864e5 milliseconds back
+    // 864e5 = 24*60*60*1000
+    const dayInMilliseconds = 864e5;
+
+    // trying to make the compiler happy, there's gotta be a better way to do this...
+    const todayTimestampString = storage.get<string>("today");
+    assert(todayTimestampString, "Contract has not been initialized");
+
+    if (todayTimestampString) {
+      const todayTimestamp = <i64>parseInt(todayTimestampString);
+
+      // logic
+      if (currentTimestamp == todayTimestamp) {
+        logging.log("day not over, not releasing tokens yet");
+        return;
+      } else if (currentTimestamp == todayTimestamp + dayInMilliseconds) {
+        logging.log("day over, releasing tokens..");
+        // code to release tokens...
+        logging.log(".. and update today's timestamp");
+        storage.set("today", currentTimestamp.toString());
+      }
+
+      logging.log(currentDate);
+    }
+  }
+
+  /**
+   * Get the timestamp of when the latest vouched tokens have been released.
+   * This timestamp will only ever represent today or yesterday's date.
+   *
+   * The number represents non-leap-milliseconds since January 1, 1970 0:00:00 UTC.
+   * @returns last vouched tokens release timestamp
+   */
+  getTodayTimestamp(): string | null {
+    const todayTimestampString = storage.get<string>("today");
+    assert(todayTimestampString, "Contract has not been initialized");
+
+    return todayTimestampString;
+  }
+
+  // todo: tmp method, should not be a callable
+  initializeContract(): void {
+    const todayTimestamp = this.updateTodayTimestampKey();
+    logging.log("Initializing contract, with today=" + todayTimestamp);
+  }
+
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
   // tmp
 
@@ -172,6 +239,23 @@ export class Contract {
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
   // PRIVATE
+
+  // Storing todayTimestamp as a string because i64 cannot be nullable
+  // Should we store with -1 instead?
+  private updateTodayTimestampKey(): string {
+    const blockTimestampMultiplier = 1000000;
+    const blockTimestamp = Context.blockTimestamp;
+    const currentDateTime = new Date(blockTimestamp / blockTimestampMultiplier);
+    currentDateTime.setUTCHours(0);
+    currentDateTime.setUTCMinutes(0);
+    currentDateTime.setUTCSeconds(0);
+    currentDateTime.setUTCMilliseconds(0);
+
+    const todayTimestamp = (currentDateTime.getTime() - 864e5).toString();
+    storage.set("today", todayTimestamp);
+
+    return todayTimestamp;
+  }
 
   private generateValueVouchTransactionId(): string {
     return (

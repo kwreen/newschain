@@ -1,8 +1,8 @@
-import { context, u128 } from "near-sdk-as";
+import { Context, u128 } from "near-sdk-as";
 
 @nearBindgen
 export class ValueVouchTransaction {
-  createdAt: u64 = context.blockTimestamp;
+  createdAt: u64 = Context.blockTimestamp;
 
   constructor(
     public sender: string,

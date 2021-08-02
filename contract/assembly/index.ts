@@ -8,6 +8,7 @@ import {
   storage,
   u128,
 } from "near-sdk-as";
+import { XCC_GAS } from "./constants";
 
 import {
   NEWS_ITEM_ID_PREFIX,
@@ -23,18 +24,18 @@ const DEFAULT_MESSAGE = "Hello";
 export class Contract {
   // { news_item_id => NewsItem }
   idToNewsItem: PersistentUnorderedMap<string, NewsItem> =
-    new PersistentUnorderedMap<string, NewsItem>("a");
+    new PersistentUnorderedMap<string, NewsItem>("a0");
 
   // { vouch_transaction_id => VouchTransaction }
   idToVouchTransaction: PersistentUnorderedMap<string, VouchTransaction> =
-    new PersistentUnorderedMap<string, VouchTransaction>("b");
+    new PersistentUnorderedMap<string, VouchTransaction>("b0");
 
   // { news_item_id => [VouchTransactions] }
   newsItemIdToVouchTransctions: PersistentUnorderedMap<
     string,
     PersistentVector<VouchTransaction>
   > = new PersistentUnorderedMap<string, PersistentVector<VouchTransaction>>(
-    "c"
+    "c0"
   );
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
@@ -78,6 +79,21 @@ export class Contract {
     this.idToNewsItem.set(newsItemId, newsItem);
   }
 
+  /**
+   * Get today's most highly vouched for news items.
+   *
+   * todo:
+   *   - should make this more efficient, maybe store items by date?
+   *
+   * @returns today's top 3 vouched news items
+   */
+  getTop3VouchedNewsItem(): NewsItem[] {
+    const sortedNewsItems =
+      this.getDescendingSortedNewsItemsByTotalVouchedTokens();
+
+    return sortedNewsItems.slice(0, 3);
+  }
+
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
   // VOUCH TRANSACTIONS
 
@@ -117,6 +133,7 @@ export class Contract {
     currentTransactions.push(newTransaction);
     this.newsItemIdToVouchTransctions.set(newsItemId, currentTransactions);
 
+    // todo: this doesn't seem to update the total
     newsItem.totalVouchedTokens = u128.add(newsItem.totalVouchedTokens, amount);
   }
 
@@ -170,16 +187,53 @@ export class Contract {
       } else if (currentTimestamp == lastTimestamp + dayInMilliseconds) {
         logging.log("day over, releasing tokens..");
         // code to release tokens...
-        logging.log(".. and update today's timestamp");
-        storage.set(
-          LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP,
-          currentTimestamp.toString()
-        );
+        // todo: actually send to a lockup account to keep staked tokens until end of day
+        const tmpLockupAccount = Context.sender;
+
+        // get the top vouched news
+        const top3NewsItems =
+          this.getDescendingSortedNewsItemsByTotalVouchedTokens().slice(0, 3);
+
+        for (let i = 0; i < top3NewsItems.length; i++) {
+          const newsItem = top3NewsItems[i];
+          ContractPromiseBatch.create(tmpLockupAccount)
+            .transfer(newsItem.totalVouchedTokens)
+            .then(Context.contractName)
+            .function_call(
+              "onVouchedTokensRelease",
+              "{ currentTimestamp:" + currentTimestamp.toString() + "}",
+              // why does this not work: `{ currentTimestamp: currentTimestamp.toString }`?
+              u128.Zero,
+              XCC_GAS
+            );
+
+          logging.log(
+            "Releasing " +
+              newsItem.totalVouchedTokens.toString() +
+              " tokens for NewsItem #" +
+              newsItem.id
+          );
+
+          // todo: tmp code
+          newsItem.totalVouchedTokens = u128.Zero;
+          logging.log(newsItem);
+        }
       }
 
       logging.log(currentDateTime);
     }
   }
+
+  onVouchedTokensRelease(currentTimestamp: string): void {
+    // assert predecessor is contract
+    logging.log(
+      "Updating LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP following vouched tokens release..."
+    );
+    storage.set(LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP, currentTimestamp);
+  }
+
+  // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+  // CONTRACT ENV
 
   /**
    * Get the timestamp of when the latest vouched tokens have been released.
@@ -203,6 +257,7 @@ export class Contract {
     // Should we store with -1 instead?
     const currentDateTime = this.getCurrentDateTime();
 
+    // todo: tmp code, setting to yesterday instead of today
     const today = (currentDateTime.getTime() - 864e5).toString();
     storage.set(LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP, today);
 
@@ -210,6 +265,66 @@ export class Contract {
       "Initializing contract with LAST_VOUCHED_TOKENS_RELEASE_TIMESTAMP=" +
         today
     );
+  }
+
+  // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+  // PRIVATE
+
+  private getCurrentDateTime(): Date {
+    // Date is from Context is retrieved as nanoseconds (10^-9)
+    // JavaScript dates are handled in milliseconds (10^-3)
+    const blockTimestampMultiplier = 1000000;
+    const blockTimestamp = Context.blockTimestamp;
+
+    // We don't need the time, only the date
+    const currentDateTime = new Date(blockTimestamp / blockTimestampMultiplier);
+    currentDateTime.setUTCHours(0);
+    currentDateTime.setUTCMinutes(0);
+    currentDateTime.setUTCSeconds(0);
+    currentDateTime.setUTCMilliseconds(0);
+
+    return currentDateTime;
+  }
+
+  private generateVouchTransactionId(): string {
+    return (
+      VOUCH_TRANSACTION_ID_PREFIX + this.idToVouchTransaction.length.toString()
+    );
+  }
+
+  // todo: is there a better convention to generate ids on the chain, e.g. use UUIDs?
+  private generateNewsItemId(): string {
+    return NEWS_ITEM_ID_PREFIX + this.idToNewsItem.length.toString();
+  }
+
+  private getTransactionsByNewsItemId(
+    id: string
+  ): PersistentVector<VouchTransaction> {
+    let currentTransactions: PersistentVector<VouchTransaction>;
+    if (this.newsItemIdToVouchTransctions.contains(id)) {
+      currentTransactions = this.newsItemIdToVouchTransctions.getSome(id);
+    } else {
+      currentTransactions = new PersistentVector<VouchTransaction>("d0");
+    }
+
+    return currentTransactions;
+  }
+
+  private getDescendingSortedNewsItemsByTotalVouchedTokens(): NewsItem[] {
+    const newsItems = this.idToNewsItem.values();
+    newsItems.sort((a, b) => {
+      // todo: would it be possible to avoid this conversion u128 -> string -> int as number?
+      // i.e. simply doing `u128.sub(b.totalVouchedTokens, a.totalVouchedTokens)` won't work
+      if (b.totalVouchedTokens < a.totalVouchedTokens) {
+        return -1;
+      }
+      if (b.totalVouchedTokens > a.totalVouchedTokens) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return newsItems;
   }
 
   // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
@@ -239,46 +354,5 @@ export class Contract {
     );
 
     storage.set(accountId, message);
-  }
-
-  // ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-  // PRIVATE
-
-  private getCurrentDateTime(): Date {
-    // Date is from Context is retrieved as nanoseconds (10^-9)
-    // JavaScript dates are handled in milliseconds (10^-3)
-    const blockTimestampMultiplier = 1000000;
-    const blockTimestamp = Context.blockTimestamp;
-
-    const currentDateTime = new Date(blockTimestamp / blockTimestampMultiplier);
-    currentDateTime.setUTCHours(0);
-    currentDateTime.setUTCMinutes(0);
-    currentDateTime.setUTCSeconds(0);
-    currentDateTime.setUTCMilliseconds(0);
-
-    return currentDateTime;
-  }
-
-  private generateVouchTransactionId(): string {
-    return (
-      VOUCH_TRANSACTION_ID_PREFIX + this.idToVouchTransaction.length.toString()
-    );
-  }
-
-  private generateNewsItemId(): string {
-    return NEWS_ITEM_ID_PREFIX + this.idToNewsItem.length.toString();
-  }
-
-  private getTransactionsByNewsItemId(
-    id: string
-  ): PersistentVector<VouchTransaction> {
-    let currentTransactions: PersistentVector<VouchTransaction>;
-    if (this.newsItemIdToVouchTransctions.contains(id)) {
-      currentTransactions = this.newsItemIdToVouchTransctions.getSome(id);
-    } else {
-      currentTransactions = new PersistentVector<VouchTransaction>("d");
-    }
-
-    return currentTransactions;
   }
 }

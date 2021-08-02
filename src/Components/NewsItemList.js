@@ -15,10 +15,10 @@ const NewsItemList = (props) => {
       setNewsItems(newsItems);
       console.log(newsItems);
 
-      let transactionsForNI_5 = await window.contract.getVouchTransactions({
-        newsItemId: "NI_5",
+      let transactionsForNI_0 = await window.contract.getVouchTransactions({
+        newsItemId: "NI_0",
       });
-      console.log(transactionsForNI_5);
+      console.log(transactionsForNI_0);
     };
 
     fetchData();

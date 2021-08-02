@@ -12,7 +12,7 @@ export class NewsItem {
     public id: string,
     public sharerId: string,
     public title: string,
-    public totalVouchedTokens: u128,
+    public totalVouchedTokens: u128, // todo: should this be f64?
     public link?: string
   ) {}
 }
